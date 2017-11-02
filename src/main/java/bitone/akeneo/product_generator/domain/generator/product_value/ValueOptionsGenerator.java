@@ -14,9 +14,11 @@ class ValueOptionsGenerator implements ValueGenerator {
 
         HashSet<Option> data = new HashSet<Option>();
 
-        for (int i = 0; i < 3; i++) {
-            Option option = options[RandomlyPicker.pickArrayIndex(options.length)];
-            data.add(option);
+        if (null != options) {
+            for (int i = 0; i < 3; i++) {
+                Option option = options[RandomlyPicker.pickArrayIndex(options.length)];
+                data.add(option);
+            }
         }
 
         return new ProductValue(attribute, data, locale, channel);

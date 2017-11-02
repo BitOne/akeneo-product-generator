@@ -60,7 +60,7 @@ public class ProductGenerator
         ProductValue[] values = getRandomValues(family, identifier);
         Category[] categories = getRandomCategories();
 
-        return new Product(id, identifier, family, values, categories);
+        return new Product(id, identifier, true, family, values, categories);
     }
 
     private Family getRandomFamily() throws NoFamilyDefinedException {
@@ -119,6 +119,11 @@ public class ProductGenerator
         if (!valueGeneratorRegistry.support(attribute)) {
             return;
         }
+
+        if (RandomlyPicker.pickBoolean()) {
+            return;
+        }
+
         ValueGenerator generator = valueGeneratorRegistry.get(attribute);
 
         if (attribute.isScopable() && attribute.isLocalizable()) {

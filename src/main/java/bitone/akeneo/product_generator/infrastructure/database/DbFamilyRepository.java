@@ -38,7 +38,11 @@ public class DbFamilyRepository implements FamilyRepository {
 
     public void initialize(String dbUrl) throws SQLException {
         Connection conn;
+        Connection attributesConn;
+        Connection labelsConn;
         Statement stmt;
+        Statement attributesStmt;
+        Statement labelsStmt;
 
         families = new HashMap<String, Family>();
 
@@ -48,32 +52,52 @@ public class DbFamilyRepository implements FamilyRepository {
             throw new SQLException(e);
         }
         conn = DriverManager.getConnection(dbUrl);
+        attributesConn = DriverManager.getConnection(dbUrl);
+        labelsConn = DriverManager.getConnection(dbUrl);
         stmt = conn.createStatement();
 
+        attributesStmt = attributesConn.createStatement();
+        labelsStmt = labelsConn.createStatement();
+
         ResultSet rs = stmt.executeQuery(
-            "SELECT f.id, f.code, GROUP_CONCAT(a.code) as attrs FROM pim_catalog_family f "
-            + "LEFT JOIN pim_catalog_family_attribute fa ON fa.family_id = f.id "
-            + "LEFT JOIN pim_catalog_attribute a ON a.id = fa.attribute_id "
+            "SELECT f.id, f.code FROM pim_catalog_family f "
             + "GROUP BY f.id, f.code"
         );
 
-        while(rs.next()){
+        while (rs.next()){
             int id  = rs.getInt("f.id");
             String code = rs.getString("f.code");
-            String[] attributeCodes = rs.getString("attrs").split(",");
-
             ArrayList<Attribute> attributes = new ArrayList<Attribute>();
+            HashMap<String, String> labels = new HashMap<String, String>();
 
-            for(String attributeCode : attributeCodes) {
-                attributes.add(attributeRepository.get(attributeCode));
+            ResultSet rsAttributes = attributesStmt.executeQuery(
+                "SELECT a.code FROM pim_catalog_attribute a "
+                + "JOIN pim_catalog_family_attribute fa ON fa.attribute_id = a.id AND fa.family_id = " + id + " "
+                + " GROUP BY a.code"
+            );
+
+            while (rsAttributes.next()) {
+                attributes.add(attributeRepository.get(rsAttributes.getString("a.code")));
             }
 
-            Family family = new Family(id, code, attributes.toArray(new Attribute[attributes.size()]), null);
+            ResultSet rsLabels = labelsStmt.executeQuery(
+                "SELECT t.locale, t.label FROM pim_catalog_family_translation t WHERE t.foreign_key =  " + id
+            );
+
+            while (rsLabels.next()) {
+                labels.put(rsLabels.getString("t.locale"), rsLabels.getString("t.label"));
+            }
+
+            Family family = new Family(id, code, labels, attributes.toArray(new Attribute[attributes.size()]), null);
             families.put(code, family);
         }
 
         rs.close();
         stmt.close();
+        attributesStmt.close();
+        labelsStmt.close();
         conn.close();
+        attributesConn.close();
+        labelsConn.close();
     }
 }

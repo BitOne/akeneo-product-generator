@@ -11,7 +11,11 @@ class ValueOptionGenerator implements ValueGenerator {
     public ProductValue generate(Attribute attribute, Channel channel, Locale locale) {
         Option[] options = attribute.getOptions();
 
-        Option data = options[RandomlyPicker.pickArrayIndex(options.length)];
+        Option data = null;
+
+        if (null != options) {
+            data = options[RandomlyPicker.pickArrayIndex(options.length)];
+        }
 
         return new ProductValue(attribute, data, locale, channel);
     }

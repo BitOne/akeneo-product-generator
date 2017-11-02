@@ -30,21 +30,20 @@ public class GenerateProductCommand {
     private String dbUrl;
 
     public void execute(String[] args)
-        throws FileNotFoundException, UnsupportedEncodingException, SQLException, NoFamilyDefinedException, NoChildrenCategoryDefinedException {
+        throws FileNotFoundException, UnsupportedEncodingException, SQLException, NoFamilyDefinedException, NoChildrenCategoryDefinedException, SecurityException {
 
         GenerateProductHandler handler;
         ProductGenerator generator;
         ProductRepository repository;
 
         dbUrl = args[0];
-        String exportDir = args[1];
+        String outDir = args[1];
         int productsCount = Integer.valueOf(args[2]);
 
-        PrintWriter productWriter = new PrintWriter(exportDir + "/products.tsv");
-        PrintWriter productCategoryWriter = new PrintWriter(exportDir + "/products-categories.tsv");
-        PrintWriter uniqueDataWriter = new PrintWriter(exportDir + "/products-unique-data.tsv");
+        repository = new FileProductRepository(outDir);
 
-        repository = getProductRepository(productWriter, productCategoryWriter, uniqueDataWriter);
+        repository.open();
+
         generator = getGenerator();
         handler = new GenerateProductHandler(generator, repository);
 
@@ -53,13 +52,7 @@ public class GenerateProductCommand {
            handler.handle(command);
         }
 
-        productWriter.close();
-        productCategoryWriter.close();
-        uniqueDataWriter.close();
-    }
-
-    private ProductRepository getProductRepository(PrintWriter productWriter, PrintWriter productCategoryWriter, PrintWriter uniqueDataWriter) {
-        return new FileProductRepository(productWriter, productCategoryWriter, uniqueDataWriter);
+        repository.close();
     }
 
     private ProductGenerator getGenerator() throws SQLException {
