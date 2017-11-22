@@ -22,7 +22,7 @@ class NumberValueGenerator implements ValueGenerator {
             max = attribute.getProperties().getNumberMax().intValue();
         }
 
-        Integer data = new Integer(RandomlyPicker.pickIntBetween(min, max));
+        Integer data = new Integer(RandomlyPicker.getInstance().pickIntBetween(min, max));
 
         return new ProductValue(attribute, data, locale, channel);
     }

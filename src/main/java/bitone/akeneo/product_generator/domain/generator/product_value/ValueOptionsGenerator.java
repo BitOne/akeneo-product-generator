@@ -16,7 +16,7 @@ class ValueOptionsGenerator implements ValueGenerator {
 
         if (null != options) {
             for (int i = 0; i < 3; i++) {
-                Option option = options[RandomlyPicker.pickArrayIndex(options.length)];
+                Option option = options[RandomlyPicker.getInstance().pickArrayIndex(options.length)];
                 data.add(option);
             }
         }

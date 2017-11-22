@@ -60,13 +60,16 @@ public class DbFamilyRepository implements FamilyRepository {
         labelsStmt = labelsConn.createStatement();
 
         ResultSet rs = stmt.executeQuery(
-            "SELECT f.id, f.code FROM pim_catalog_family f "
-            + "GROUP BY f.id, f.code"
+            "SELECT f.id, f.code, a.code as attribute_label_code FROM pim_catalog_family f "
+            + " JOIN pim_catalog_attribute a ON a.id = f.label_attribute_id "
+            + "GROUP BY f.id, f.code, a.code"
         );
 
         while (rs.next()){
             int id  = rs.getInt("f.id");
             String code = rs.getString("f.code");
+            String labelAttributeCode = rs.getString("attribute_label_code");
+            Attribute attributeAsLabel = attributeRepository.get(labelAttributeCode);
             ArrayList<Attribute> attributes = new ArrayList<Attribute>();
             HashMap<String, String> labels = new HashMap<String, String>();
 
@@ -88,7 +91,7 @@ public class DbFamilyRepository implements FamilyRepository {
                 labels.put(rsLabels.getString("t.locale"), rsLabels.getString("t.label"));
             }
 
-            Family family = new Family(id, code, labels, attributes.toArray(new Attribute[attributes.size()]), null);
+            Family family = new Family(id, code, labels, attributeAsLabel, attributes.toArray(new Attribute[attributes.size()]), null);
             families.put(code, family);
         }
 

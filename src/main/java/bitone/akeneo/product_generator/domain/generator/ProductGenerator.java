@@ -74,7 +74,7 @@ public class ProductGenerator
         if (families.length == 1) {
             return families[0];
         } else {
-            return families[RandomlyPicker.pickArrayIndex(familyRepository.count())];
+            return families[RandomlyPicker.getInstance().pickArrayIndex(familyRepository.count())];
         }
     }
 
@@ -89,7 +89,7 @@ public class ProductGenerator
 
         allCategories = categoryRepository.allChildren();
         for (int i = 0; i < 4; i++) {
-            Category category = allCategories[RandomlyPicker.pickArrayIndex(allCategories.length)];
+            Category category = allCategories[RandomlyPicker.getInstance().pickArrayIndex(allCategories.length)];
 
             randomCategories.add(category);
         }
@@ -117,10 +117,6 @@ public class ProductGenerator
     private void generateValues(ArrayList<ProductValue> values, Attribute attribute)
     {
         if (!valueGeneratorRegistry.support(attribute)) {
-            return;
-        }
-
-        if (RandomlyPicker.pickBoolean()) {
             return;
         }
 

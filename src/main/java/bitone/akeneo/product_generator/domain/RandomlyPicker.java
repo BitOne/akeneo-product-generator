@@ -5,10 +5,34 @@ import java.util.Date;
 import com.github.javafaker.Faker;
 
 public class RandomlyPicker {
-    private static Random rand = new Random();
-    private static Faker faker = new Faker();
+    private static RandomlyPicker picker;
+    private static long seed = 0;
 
-    public static Integer pickArrayIndex(int arrayLength) {
+    private Random rand;
+    private Faker faker;
+
+    private RandomlyPicker() {
+        if (0 == seed) {
+            rand = new Random();
+        } else {
+            rand = new Random(seed);
+        }
+        this.faker = new Faker(rand);
+    }
+
+    public static void setSeed(long seed) {
+        RandomlyPicker.seed = seed;
+    }
+
+    public static RandomlyPicker getInstance() {
+        if (null == picker) {
+            picker = new RandomlyPicker();
+        }
+
+        return picker;
+    }
+
+    public Integer pickArrayIndex(int arrayLength) {
         if (arrayLength == 0) {
             return null;
         } else if (arrayLength == 1) {
@@ -18,15 +42,23 @@ public class RandomlyPicker {
         }
     }
 
-    public static boolean pickBoolean() {
+    public boolean pickBoolean() {
         return rand.nextBoolean();
     }
 
-    public static int pickIntBetween(int min, int max) {
+    public int pickIntBetween(int min, int max) {
         return rand.nextInt(max - min) + min;
     }
 
-    public static Date pickDateBetween(Date min, Date max) {
+    public Date pickDateBetween(Date min, Date max) {
         return faker.date().between(min, max);
+    }
+
+    public String pickLongText() {
+        return faker.shakespeare().hamletQuote();
+    }
+
+    public String pickShortText() {
+        return faker.book().title();
     }
 }
