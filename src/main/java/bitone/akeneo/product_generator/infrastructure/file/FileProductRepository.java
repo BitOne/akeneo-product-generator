@@ -24,6 +24,8 @@ public class FileProductRepository implements ProductRepository {
     private static final int esBatchSize = 5000;
 
     private String outDir;
+    private String productIndex;
+    private String productAndProductModelIndex;
 
     private PrintWriter productWriter;
     private PrintWriter productCategoryWriter;
@@ -37,11 +39,15 @@ public class FileProductRepository implements ProductRepository {
     private int productsCounter;
 
     public FileProductRepository(
-        String outDir
+        String outDir,
+        String productIndex,
+        String productAndProductModelIndex
     ) {
         gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'00:00:00+02:00").create();
 
         this.outDir = outDir;
+        this.productIndex = productIndex;
+        this.productAndProductModelIndex = productAndProductModelIndex;
 
         esAttributeSuffixes = getElasticsearchAttributeSuffixes();
     }
@@ -127,10 +133,18 @@ public class FileProductRepository implements ProductRepository {
 
         String esProduct = formatProductForElasticsearch(product);
 
-        elasticsearchDataWriter.println("{ \"index\" : { \"_index\" : \"akeneo_pim_product\", \"_type\" : \"pim_catalog_product\", \"_id\" : \""+ product.getId() + "\" } }");
+        elasticsearchDataWriter.format(
+            "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"pim_catalog_product\", \"_id\" : \"%s\" } }%n",
+            productIndex,
+            product.getId()
+        );
         elasticsearchDataWriter.println(esProduct);
 
-        elasticsearchDataWriter.println("{ \"index\" : { \"_index\" : \"akeneo_pim_product_and_product_model\", \"_type\" : \"pim_catalog_product\", \"_id\" : \"product_"+ product.getId() + "\" } }");
+        elasticsearchDataWriter.format(
+            "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"pim_catalog_product\", \"_id\" : \"product_%s\" } }%n",
+            productAndProductModelIndex,
+            product.getId()
+        );
         elasticsearchDataWriter.println(esProduct);
 
         productsCounter++;

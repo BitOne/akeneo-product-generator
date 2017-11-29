@@ -29,39 +29,41 @@ import java.sql.SQLException;
 public class GenerateProductCommand {
     private String dbUrl;
 
-    public void execute(String[] args)
+    public void execute(
+        String databaseUrl,
+        String outputDirectory,
+        int productCount,
+        String productIndex,
+        String productAndProductModelIndex
+    )
         throws FileNotFoundException, UnsupportedEncodingException, SQLException, NoFamilyDefinedException, NoChildrenCategoryDefinedException, SecurityException {
 
         GenerateProductHandler handler;
         ProductGenerator generator;
         ProductRepository repository;
 
-        dbUrl = args[0];
-        String outDir = args[1];
-        int productsCount = Integer.valueOf(args[2]);
-
-        repository = new FileProductRepository(outDir);
+        repository = new FileProductRepository(outputDirectory, productIndex, productAndProductModelIndex);
 
         repository.open();
 
-        generator = getGenerator();
+        generator = getGenerator(databaseUrl);
         handler = new GenerateProductHandler(generator, repository);
 
-       for (int count = 0; count < productsCount; count++) {
-           GenerateProduct command = new GenerateProduct();
-           handler.handle(command);
+        for (int count = 0; count < productCount; count++) {
+            GenerateProduct command = new GenerateProduct();
+            handler.handle(command);
         }
 
         repository.close();
     }
 
-    private ProductGenerator getGenerator() throws SQLException {
-        LocaleRepository localeRepository = buildLocaleRepository();
-        CurrencyRepository currencyRepository = buildCurrencyRepository();
-        CategoryRepository categoryRepository = buildCategoryRepository();
-        ChannelRepository channelRepository = buildChannelRepository(localeRepository, currencyRepository);
-        AttributeRepository attributeRepository = buildAttributeRepository();
-        FamilyRepository familyRepository = buildFamilyRepository(attributeRepository, channelRepository);
+    private ProductGenerator getGenerator(String databaseUrl) throws SQLException {
+        LocaleRepository localeRepository = buildLocaleRepository(databaseUrl);
+        CurrencyRepository currencyRepository = buildCurrencyRepository(databaseUrl);
+        CategoryRepository categoryRepository = buildCategoryRepository(databaseUrl);
+        ChannelRepository channelRepository = buildChannelRepository(databaseUrl, localeRepository, currencyRepository);
+        AttributeRepository attributeRepository = buildAttributeRepository(databaseUrl);
+        FamilyRepository familyRepository = buildFamilyRepository(databaseUrl, attributeRepository, channelRepository);
 
         return new ProductGenerator(
             channelRepository,
@@ -72,53 +74,55 @@ public class GenerateProductCommand {
         );
     }
 
-    private CategoryRepository buildCategoryRepository() throws SQLException {
+    private CategoryRepository buildCategoryRepository(String databaseUrl) throws SQLException {
         DbCategoryRepository repository = new DbCategoryRepository();
-        repository.initialize(dbUrl);
+        repository.initialize(databaseUrl);
 
         return repository;
     }
 
     private FamilyRepository buildFamilyRepository(
+        String databaseUrl,
         AttributeRepository attributeRepository,
         ChannelRepository channelRepository
     ) throws SQLException {
         DbFamilyRepository repository = new DbFamilyRepository(attributeRepository, channelRepository);
-        repository.initialize(dbUrl);
+        repository.initialize(databaseUrl);
 
         return repository;
     }
 
-    private AttributeRepository buildAttributeRepository() throws SQLException {
+    private AttributeRepository buildAttributeRepository(String databaseUrl) throws SQLException {
         DbAttributeGroupRepository groupRepository = new DbAttributeGroupRepository();
-        groupRepository.initialize(dbUrl);
+        groupRepository.initialize(databaseUrl);
 
         DbAttributeRepository repository = new DbAttributeRepository();
-        repository.initialize(dbUrl);
+        repository.initialize(databaseUrl);
 
         return repository;
     }
 
-    private LocaleRepository buildLocaleRepository() throws SQLException {
+    private LocaleRepository buildLocaleRepository(String databaseUrl) throws SQLException {
         DbLocaleRepository repository = new DbLocaleRepository();
-        repository.initialize(dbUrl);
+        repository.initialize(databaseUrl);
 
         return repository;
     }
 
-    private CurrencyRepository buildCurrencyRepository() throws SQLException {
+    private CurrencyRepository buildCurrencyRepository(String databaseUrl) throws SQLException {
         DbCurrencyRepository repository = new DbCurrencyRepository();
-        repository.initialize(dbUrl);
+        repository.initialize(databaseUrl);
 
         return repository;
     }
 
     private ChannelRepository buildChannelRepository(
+        String databaseUrl,
         LocaleRepository localeRepository,
         CurrencyRepository currencyRepository
     ) throws SQLException {
         DbChannelRepository repository = new DbChannelRepository(localeRepository);
-        repository.initialize(dbUrl);
+        repository.initialize(databaseUrl);
 
         return repository;
     }
