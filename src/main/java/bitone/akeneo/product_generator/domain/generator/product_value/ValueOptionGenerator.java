@@ -14,7 +14,7 @@ class ValueOptionGenerator implements ValueGenerator {
         Option data = null;
 
         if (null != options) {
-            data = options[RandomlyPicker.pickArrayIndex(options.length)];
+            data = options[RandomlyPicker.getInstance().pickArrayIndex(options.length)];
         }
 
         return new ProductValue(attribute, data, locale, channel);

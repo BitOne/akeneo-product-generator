@@ -33,7 +33,7 @@ class DateValueGenerator implements ValueGenerator {
             max = attribute.getProperties().getDateMax();
         }
 
-        Date data = RandomlyPicker.pickDateBetween(min, max);
+        Date data = RandomlyPicker.getInstance().pickDateBetween(min, max);
 
         return new ProductValue(attribute, data, locale, channel);
     }

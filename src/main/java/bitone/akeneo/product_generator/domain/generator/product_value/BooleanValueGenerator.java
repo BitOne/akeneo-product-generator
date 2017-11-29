@@ -8,7 +8,7 @@ import bitone.akeneo.product_generator.domain.RandomlyPicker;
 
 class BooleanValueGenerator implements ValueGenerator {
     public ProductValue generate(Attribute attribute, Channel channel, Locale locale) {
-        Boolean data = RandomlyPicker.pickBoolean();
+        Boolean data = RandomlyPicker.getInstance().pickBoolean();
 
         return new ProductValue(attribute, data, locale, channel);
     }

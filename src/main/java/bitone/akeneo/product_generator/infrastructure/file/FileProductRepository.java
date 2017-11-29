@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.zip.GZIPOutputStream;
 import bitone.akeneo.product_generator.domain.model.ProductRepository;
+import bitone.akeneo.product_generator.domain.model.ProductRepository;
 import bitone.akeneo.product_generator.domain.model.Product;
 import bitone.akeneo.product_generator.domain.model.Attribute;
 import bitone.akeneo.product_generator.domain.model.AttributeTypes;
@@ -23,6 +24,8 @@ public class FileProductRepository implements ProductRepository {
     private static final int esBatchSize = 5000;
 
     private String outDir;
+    private String productIndex;
+    private String productAndProductModelIndex;
 
     private PrintWriter productWriter;
     private PrintWriter productCategoryWriter;
@@ -36,11 +39,15 @@ public class FileProductRepository implements ProductRepository {
     private int productsCounter;
 
     public FileProductRepository(
-        String outDir
+        String outDir,
+        String productIndex,
+        String productAndProductModelIndex
     ) {
         gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'00:00:00+02:00").create();
 
         this.outDir = outDir;
+        this.productIndex = productIndex;
+        this.productAndProductModelIndex = productAndProductModelIndex;
 
         esAttributeSuffixes = getElasticsearchAttributeSuffixes();
     }
@@ -126,10 +133,18 @@ public class FileProductRepository implements ProductRepository {
 
         String esProduct = formatProductForElasticsearch(product);
 
-        elasticsearchDataWriter.println("{ \"index\" : { \"_index\" : \"akeneo_pim_product\", \"_type\" : \"pim_catalog_product\", \"_id\" : \""+ product.getId() + "\" } }");
+        elasticsearchDataWriter.format(
+            "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"pim_catalog_product\", \"_id\" : \"%s\" } }%n",
+            productIndex,
+            product.getId()
+        );
         elasticsearchDataWriter.println(esProduct);
 
-        elasticsearchDataWriter.println("{ \"index\" : { \"_index\" : \"akeneo_pim_product_and_product_model\", \"_type\" : \"pim_catalog_product\", \"_id\" : \"product_"+ product.getId() + "\" } }");
+        elasticsearchDataWriter.format(
+            "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"pim_catalog_product\", \"_id\" : \"product_%s\" } }%n",
+            productAndProductModelIndex,
+            product.getId()
+        );
         elasticsearchDataWriter.println(esProduct);
 
         productsCounter++;
@@ -212,12 +227,16 @@ public class FileProductRepository implements ProductRepository {
         HashMap<String, Object> productData = new HashMap<String, Object>();
         HashMap<String, Object> familyData = new HashMap<String, Object>();
         HashMap<String, HashMap> valuesData = new HashMap<String, HashMap>();
+        HashMap<String, HashMap> label = new HashMap<String, HashMap>();
         ArrayList<String> attributesForThisLevel = new ArrayList<String>();
+
+        Attribute attributeAsLabel = product.getFamily().getAttributeAsLabel();
 
         productData.put("id", product.getId());
         productData.put("identifier", product.getIdentifier());
         productData.put("created", "2017-10-12T10:07:10+01:00");
         productData.put("updated", "2017-10-12T10:07:10+01:00");
+        productData.put("label", label);
 
         familyData.put("code", product.getFamily().getCode());
         familyData.put("labels", product.getFamily().getLabels());
@@ -309,6 +328,19 @@ public class FileProductRepository implements ProductRepository {
                     channelAndLocale.put(channelCode, localeAndData);
 
                     valuesData.put(esAttributeCode, channelAndLocale);
+                }
+
+                if (attribute.getCode().equals(attributeAsLabel.getCode())) {
+                    HashMap<String, HashMap> valueData = valuesData.get(attribute.getCode());
+
+                    if (label.containsKey(channelCode)) {
+                        label.get(channelCode).put(localeCode, data);
+                    } else {
+                        HashMap<String, Object> localeAndData = new HashMap<String, Object>();
+                        localeAndData.put(localeCode, data);
+
+                        label.put(channelCode, localeAndData);
+                    }
                 }
             }
         }

@@ -12,7 +12,7 @@ class MetricValueGenerator implements ValueGenerator {
 
         HashMap<String, Object> data = new HashMap<String, Object>();
 
-        int amount = RandomlyPicker.pickIntBetween(0, 100);
+        int amount = RandomlyPicker.getInstance().pickIntBetween(0, 100);
 
         data.put("unit", attribute.getProperties().getDefaultMetricUnit());
         data.put("amount", new Integer(amount));

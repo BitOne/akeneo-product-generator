@@ -25,7 +25,7 @@ class PriceValueGenerator implements ValueGenerator {
 
         for (Currency currency: currencies) {
             HashMap<String, String> priceData = new HashMap<String, String>();
-            int amount = RandomlyPicker.pickIntBetween(0, 1000);
+            int amount = RandomlyPicker.getInstance().pickIntBetween(0, 1000);
             priceData.put("amount", String.valueOf(amount));
             priceData.put("currency", currency.getCode());
 

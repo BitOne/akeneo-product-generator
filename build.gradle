@@ -15,14 +15,14 @@ dependencies {
     compile group: 'com.github.javafaker', name: 'javafaker', version: '0.13'
     compile 'com.google.code.gson:gson:2.8.2'
     compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.6'
-    compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
+    compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
     testCompile "junit:junit:4.12"
 }
 
 shadowJar {
     baseName = 'akeneo-product-generator-full'
     classifier = null
-    version =  '0.2.0'
+    version =  '0.3.0'
     configurations = [project.configurations.compile]
 }
 

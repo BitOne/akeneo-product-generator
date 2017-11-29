@@ -4,16 +4,15 @@ import bitone.akeneo.product_generator.domain.model.ProductValue;
 import bitone.akeneo.product_generator.domain.model.Attribute;
 import bitone.akeneo.product_generator.domain.model.Channel;
 import bitone.akeneo.product_generator.domain.model.Locale;
-import com.github.javafaker.Faker;
+import bitone.akeneo.product_generator.domain.RandomlyPicker;
 
 class TextValueGenerator implements ValueGenerator {
-    Faker faker = new Faker();
 
     long uniqueSuffix = 0;
 
     public ProductValue generate(Attribute attribute, Channel channel, Locale locale) {
 
-        String data = faker.book().title();
+        String data = RandomlyPicker.getInstance().pickShortText();
 
         if (attribute.getProperties().isUnique()) {
             data += "-"+uniqueSuffix;
