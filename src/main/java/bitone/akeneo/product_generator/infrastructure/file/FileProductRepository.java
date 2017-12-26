@@ -1,27 +1,30 @@
 package bitone.akeneo.product_generator.infrastructure.file;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.Gson;
-import java.io.PrintWriter;
-import java.io.FileOutputStream;
-import java.io.FileNotFoundException;
-import java.io.File;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.ArrayList;
-import java.util.zip.GZIPOutputStream;
-import bitone.akeneo.product_generator.domain.model.ProductRepository;
-import bitone.akeneo.product_generator.domain.model.ProductRepository;
-import bitone.akeneo.product_generator.domain.model.Product;
+import bitone.akeneo.product_generator.domain.exception.RepositoryException;
 import bitone.akeneo.product_generator.domain.model.Attribute;
 import bitone.akeneo.product_generator.domain.model.AttributeTypes;
-import bitone.akeneo.product_generator.domain.model.ProductValue;
 import bitone.akeneo.product_generator.domain.model.Category;
+import bitone.akeneo.product_generator.domain.model.Product;
+import bitone.akeneo.product_generator.domain.model.ProductRepository;
+import bitone.akeneo.product_generator.domain.model.ProductValue;
 import bitone.akeneo.product_generator.domain.model.attribute.Option;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.zip.GZIPOutputStream;
 
 public class FileProductRepository implements ProductRepository {
     private int uniqueDataId = 1;
-    private static final int esBatchSize = 5000;
+    private static final int esBatchSize = 90*1024*1024;
 
     private String outDir;
     private String productIndex;
@@ -30,68 +33,66 @@ public class FileProductRepository implements ProductRepository {
     private PrintWriter productWriter;
     private PrintWriter productCategoryWriter;
     private PrintWriter uniqueDataWriter;
-    private FileOutputStream esOutputStream;
-    private GZIPOutputStream esCompressedStream;
-    private PrintWriter elasticsearchDataWriter;
+    private PrintWriter esDataWriter;
 
     private Gson gson;
     private HashMap<String, String> esAttributeSuffixes;
-    private int productsCounter;
+
+    private int esFileCounter;
+    private int esByteCounter;
 
     public FileProductRepository(
         String outDir,
         String productIndex,
         String productAndProductModelIndex
     ) {
-        gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'00:00:00+02:00").create();
+        this.gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'00:00:00+02:00").create();
+        this.esFileCounter = 0;
+        this.esByteCounter = 0;
+        this.esAttributeSuffixes = getElasticsearchAttributeSuffixes();
 
         this.outDir = outDir;
         this.productIndex = productIndex;
         this.productAndProductModelIndex = productAndProductModelIndex;
-
-        esAttributeSuffixes = getElasticsearchAttributeSuffixes();
     }
 
-    public void open() {
+    public void open() throws RepositoryException {
         try {
             File esDir = new File(outDir + "/es/");
             if (!esDir.exists()) {
                 esDir.mkdir();
             }
 
-            productWriter = new PrintWriter(outDir + "/products.tsv");
-            productCategoryWriter = new PrintWriter(outDir + "/products-categories.tsv");
-            uniqueDataWriter = new PrintWriter(outDir + "/products-unique-data.tsv");
-        } catch (Exception e) {
-            System.err.println("Unable to open the repository:" + e.getMessage());
-        }
+            productWriter = new PrintWriter(outDir + "/products.tsv", StandardCharsets.UTF_8.name());
+            productCategoryWriter = new PrintWriter(outDir + "/products-categories.tsv", StandardCharsets.UTF_8.name());
+            uniqueDataWriter = new PrintWriter(outDir + "/products-unique-data.tsv", StandardCharsets.UTF_8.name());
 
-        productsCounter = 0;
+            initEsOutput();
+
+        } catch (IOException e) {
+            throw new RepositoryException(e);
+        }
     }
 
-    public void close() {
+    public void close() throws RepositoryException {
+        productWriter.close();
+        productCategoryWriter.close();
+        uniqueDataWriter.close();
+        esDataWriter.close();
+    }
+
+    public void add(Product product) throws RepositoryException {
         try {
-            productWriter.close();
-            productCategoryWriter.close();
-            uniqueDataWriter.close();
-            elasticsearchDataWriter.close();
-            esCompressedStream.close();
-        } catch (Exception e) {
-            System.err.println("Unable to close the repository:" + e.getMessage());
+            writeProduct(product);
+            writeProductCategories(product);
+            writeUniqueData(product);
+            writeEsData(product);
+        } catch (IOException e) {
+            throw new RepositoryException(e);
         }
     }
 
-    public void add(Product product) {
-        if (productsCounter % esBatchSize == 0) {
-            try {
-                esOutputStream = new FileOutputStream(outDir + "/es/es-data-" + productsCounter + ".gzip");
-                esCompressedStream = new GZIPOutputStream(esOutputStream);
-                elasticsearchDataWriter = new PrintWriter(esCompressedStream);
-            } catch (Exception e) {
-                System.err.println("CANNOT OPEN ES DATA FILE: "+e.getMessage());
-            }
-        }
-
+    private void writeProduct(Product product) {
         String valuesData = formatValues(product);
 
         productWriter.print(product.getId());
@@ -113,10 +114,15 @@ public class FileProductRepository implements ProductRepository {
         productWriter.print("2017-10-12 10:07:10"); // updated
         productWriter.print('\t');
         productWriter.println("product"); //type
+    }
 
+    private void writeProductCategories(Product product) {
         for (Category category : product.getCategories()) {
             productCategoryWriter.println(String.valueOf(product.getId()) + '\t' + String.valueOf(category.getId()));
         }
+    }
+
+    private void writeUniqueData(Product product) {
 
         for (ProductValue value: product.getValues()) {
             if (value.getAttribute().getProperties().isUnique()) {
@@ -128,34 +134,6 @@ public class FileProductRepository implements ProductRepository {
                 uniqueDataWriter.print('\t');
                 uniqueDataWriter.println(value.getData());
                 uniqueDataId ++;
-            }
-        }
-
-        String esProduct = formatProductForElasticsearch(product);
-
-        elasticsearchDataWriter.format(
-            "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"pim_catalog_product\", \"_id\" : \"%s\" } }%n",
-            productIndex,
-            product.getId()
-        );
-        elasticsearchDataWriter.println(esProduct);
-
-        elasticsearchDataWriter.format(
-            "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"pim_catalog_product\", \"_id\" : \"product_%s\" } }%n",
-            productAndProductModelIndex,
-            product.getId()
-        );
-        elasticsearchDataWriter.println(esProduct);
-
-        productsCounter++;
-
-        if (productsCounter % esBatchSize == 0) {
-            try {
-                elasticsearchDataWriter.close();
-                esCompressedStream.close();
-                esOutputStream.close();
-            } catch (Exception e) {
-                System.err.println("CANNOT CLOSE ES DATA FILE: "+e.getMessage());
             }
         }
     }
@@ -366,6 +344,54 @@ public class FileProductRepository implements ProductRepository {
         return attributeSuffixes;
     }
 
+    private void writeEsData(Product product) throws IOException {
 
+        String esProductData = formatProductForElasticsearch(product);
 
+        writeToEsOutput(
+            String.format(
+                "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"pim_catalog_product\", \"_id\" : \"%s\" } }%n%s%n",
+                productIndex,
+                product.getId(),
+                esProductData
+            )
+        );
+
+        writeToEsOutput(
+            String.format(
+                "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"pim_catalog_product\", \"_id\" : \"%s\" } }%n%s%n",
+                productAndProductModelIndex,
+                product.getId(),
+                esProductData
+            )
+        );
+    }
+
+    private void initEsOutput() throws FileNotFoundException, IOException {
+        OutputStreamWriter esOutputStream= new OutputStreamWriter(
+            new GZIPOutputStream(
+                new FileOutputStream(outDir + "/es/es-data-" + esFileCounter + ".gzip")
+            ),
+            StandardCharsets.UTF_8
+        );
+
+        esDataWriter = new PrintWriter(esOutputStream);
+    }
+
+    private void writeToEsOutput(String data) throws FileNotFoundException, IOException {
+
+        int dataLength = data.toString().getBytes(StandardCharsets.UTF_8.name()).length;
+
+        if (esByteCounter + dataLength >= esBatchSize) {
+            esDataWriter.close();
+            esFileCounter++;
+
+            esByteCounter = 0;
+
+            initEsOutput();
+        }
+
+        esDataWriter.print(data);
+        esByteCounter += dataLength;
+    }
 }

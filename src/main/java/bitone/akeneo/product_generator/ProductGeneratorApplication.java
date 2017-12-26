@@ -3,6 +3,7 @@ package bitone.akeneo.data_generator;
 import bitone.akeneo.product_generator.infrastructure.cli.GenerateProductCommand;
 import bitone.akeneo.product_generator.domain.exception.NoFamilyDefinedException;
 import bitone.akeneo.product_generator.domain.exception.NoChildrenCategoryDefinedException;
+import bitone.akeneo.product_generator.domain.exception.RepositoryException;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
@@ -21,11 +22,11 @@ public class ProductGeneratorApplication {
     final private static String defaultProductAndProductModelIndex = "akeneo_pim_product_and_product_model";
 
     public static void main(String[] args) throws
-        FileNotFoundException,
         UnsupportedEncodingException,
         SQLException,
         NoFamilyDefinedException,
-        NoChildrenCategoryDefinedException {
+        NoChildrenCategoryDefinedException,
+        RepositoryException {
 
         GenerateProductCommand generateProduct = new GenerateProductCommand();
 
