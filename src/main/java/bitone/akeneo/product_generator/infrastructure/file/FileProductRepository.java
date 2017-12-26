@@ -63,9 +63,32 @@ public class FileProductRepository implements ProductRepository {
                 esDir.mkdir();
             }
 
-            productWriter = new PrintWriter(outDir + "/products.tsv", StandardCharsets.UTF_8.name());
-            productCategoryWriter = new PrintWriter(outDir + "/products-categories.tsv", StandardCharsets.UTF_8.name());
-            uniqueDataWriter = new PrintWriter(outDir + "/products-unique-data.tsv", StandardCharsets.UTF_8.name());
+            productWriter = new PrintWriter(
+                new OutputStreamWriter(
+                    new GZIPOutputStream(
+                        new FileOutputStream(outDir + "/products.tsv.gz")
+                    ),
+                    StandardCharsets.UTF_8
+                )
+            );
+
+            productCategoryWriter = new PrintWriter(
+                new OutputStreamWriter(
+                    new GZIPOutputStream(
+                        new FileOutputStream(outDir + "/products-categories.tsv.gz")
+                    ),
+                    StandardCharsets.UTF_8
+                )
+            );
+
+            uniqueDataWriter = new PrintWriter(
+                new OutputStreamWriter(
+                    new GZIPOutputStream(
+                        new FileOutputStream(outDir + "/products-unique-data.tsv.gz")
+                    ),
+                    StandardCharsets.UTF_8
+                )
+            );
 
             initEsOutput();
 
@@ -368,14 +391,14 @@ public class FileProductRepository implements ProductRepository {
     }
 
     private void initEsOutput() throws FileNotFoundException, IOException {
-        OutputStreamWriter esOutputStream= new OutputStreamWriter(
-            new GZIPOutputStream(
-                new FileOutputStream(outDir + "/es/es-data-" + esFileCounter + ".gzip")
-            ),
-            StandardCharsets.UTF_8
+        esDataWriter = new PrintWriter(
+            new OutputStreamWriter(
+                new GZIPOutputStream(
+                    new FileOutputStream(outDir + "/es/es-data-" + esFileCounter + ".gz")
+                ),
+                StandardCharsets.UTF_8
+            )
         );
-
-        esDataWriter = new PrintWriter(esOutputStream);
     }
 
     private void writeToEsOutput(String data) throws FileNotFoundException, IOException {
