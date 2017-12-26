@@ -5,6 +5,7 @@ import bitone.akeneo.product_generator.domain.model.ProductRepository;
 import bitone.akeneo.product_generator.domain.model.Product;
 import bitone.akeneo.product_generator.domain.exception.NoFamilyDefinedException;
 import bitone.akeneo.product_generator.domain.exception.NoChildrenCategoryDefinedException;
+import bitone.akeneo.product_generator.domain.exception.RepositoryException;
 
 public class GenerateProductHandler {
     private ProductGenerator generator;
@@ -17,7 +18,8 @@ public class GenerateProductHandler {
 
     public void handle(GenerateProduct command) throws
         NoFamilyDefinedException,
-        NoChildrenCategoryDefinedException
+        NoChildrenCategoryDefinedException,
+        RepositoryException
     {
         Product product = generator.generate();
 

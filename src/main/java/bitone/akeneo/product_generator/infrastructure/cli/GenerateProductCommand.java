@@ -11,6 +11,7 @@ import bitone.akeneo.product_generator.domain.model.LocaleRepository;
 import bitone.akeneo.product_generator.domain.model.ProductRepository;
 import bitone.akeneo.product_generator.domain.exception.NoFamilyDefinedException;
 import bitone.akeneo.product_generator.domain.exception.NoChildrenCategoryDefinedException;
+import bitone.akeneo.product_generator.domain.exception.RepositoryException;
 import bitone.akeneo.product_generator.infrastructure.database.DbAttributeGroupRepository;
 import bitone.akeneo.product_generator.infrastructure.database.DbAttributeRepository;
 import bitone.akeneo.product_generator.infrastructure.database.DbCategoryRepository;
@@ -36,7 +37,7 @@ public class GenerateProductCommand {
         String productIndex,
         String productAndProductModelIndex
     )
-        throws FileNotFoundException, UnsupportedEncodingException, SQLException, NoFamilyDefinedException, NoChildrenCategoryDefinedException, SecurityException {
+        throws UnsupportedEncodingException, SQLException, NoFamilyDefinedException, NoChildrenCategoryDefinedException, SecurityException, RepositoryException {
 
         GenerateProductHandler handler;
         ProductGenerator generator;
