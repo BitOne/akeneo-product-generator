@@ -357,9 +357,10 @@ public class FileProductRepository implements ProductRepository {
             )
         );
 
+        esProductData = esProductData.replaceAll("\"id\":([0-9]+)", "\"id\":\"product_$1\"");
         writeToEsOutput(
             String.format(
-                "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"pim_catalog_product\", \"_id\" : \"%s\" } }%n%s%n",
+                "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"pim_catalog_product\", \"_id\" : \"product_%s\" } }%n%s%n",
                 productAndProductModelIndex,
                 product.getId(),
                 esProductData
